@@ -1,6 +1,8 @@
 const serverUrlInput = document.getElementById('serverUrl');
 const modelSelect = document.getElementById('modelSelect');
 const refreshModelsBtn = document.getElementById('refreshModelsBtn');
+const languageSelect = document.getElementById('languageSelect');
+const customLanguageInput = document.getElementById('customLanguageInput');
 const summaryBtn = document.getElementById('summaryBtn');
 const newChatBtn = document.getElementById('newChatBtn');
 const debugBtn = document.getElementById('debugBtn');
@@ -16,8 +18,11 @@ let isContextLoaded = false;
 let isGenerating = false;
 
 document.addEventListener('DOMContentLoaded', () => {
-    chrome.storage.local.get(['serverUrl', 'savedModel'], async (result) => {
+    chrome.storage.local.get(['serverUrl', 'savedModel', 'responseLanguage', 'customLanguage'], async (result) => {
         serverUrlInput.value = result.serverUrl || 'http://127.0.0.1:8080';
+        languageSelect.value = result.responseLanguage || (languageSelect.options[0] && languageSelect.options[0].value);
+        customLanguageInput.value = result.customLanguage || '';
+        updateCustomLanguageVisibility();
         await fetchModels(result.savedModel);
     });
 });
@@ -26,10 +31,28 @@ serverUrlInput.addEventListener('change', () => {
     chrome.storage.local.set({ serverUrl: serverUrlInput.value.trim() });
     fetchModels();
 });
-modelSelect.addEventListener('change', () => {
+  modelSelect.addEventListener('change', () => {
     chrome.storage.local.set({ savedModel: modelSelect.value });
 });
 refreshModelsBtn.addEventListener('click', () => fetchModels());
+languageSelect.addEventListener('change', () => {
+    chrome.storage.local.set({ responseLanguage: languageSelect.value });
+    updateCustomLanguageVisibility();
+});
+customLanguageInput.addEventListener('change', () => {
+    chrome.storage.local.set({ customLanguage: customLanguageInput.value.trim() });
+});
+
+function updateCustomLanguageVisibility() {
+    customLanguageInput.style.display = languageSelect.value === 'Custom' ? 'block' : 'none';
+}
+
+function getResponseLanguage() {
+    if (languageSelect.value === 'Custom') {
+        return customLanguageInput.value.trim();
+    }
+    return languageSelect.value;
+}
 
 async function fetchModels(savedModelToSelect = null) {
     const url = serverUrlInput.value.trim();
@@ -134,7 +157,9 @@ async function ensureContextLoaded() {
     
     addMessageToUI('system', 'Reading page content...');
     const pageText = await extractCleanText();
-    const systemPrompt = `You are a helpful AI assistant. Answer in the same language as the user's question using Markdown. Your main task is to help the user work with the text of the current web page.\n\nHere is the page content:\n\n=== BEGIN PAGE CONTENT ===\n${pageText}\n=== END PAGE CONTENT ===\n\nBase your answers on this content. If the answer is not in the text, say so honestly, but you may supplement with your own knowledge.`;
+    const lang = getResponseLanguage();
+    const langInstruction = lang ? `Always respond in ${lang}.` : 'Answer in the same language as the user\'s question.';
+    const systemPrompt = `You are a helpful AI assistant. ${langInstruction} Respond using Markdown. Your main task is to help the user work with the text of the current web page.\n\nHere is the page content:\n\n=== BEGIN PAGE CONTENT ===\n${pageText}\n=== END PAGE CONTENT ===\n\nBase your answers on this content. If the answer is not in the text, say so honestly, but you may supplement with your own knowledge.`;
 
     conversationHistory = [{ role: "system", content: systemPrompt }];
     isContextLoaded = true;
