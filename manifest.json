@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "SideChat",
+  "version": "0.1",
+  "description": "Page summarization via llama.cpp in a side panel.",
+  "permissions": [
+    "scripting",
+    "sidePanel",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Side Panel"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "host_permissions": [
+    "http://127.0.0.1:8080/*",
+    "http://localhost:8080/*",
+    "<all_urls>"
+  ]
+}

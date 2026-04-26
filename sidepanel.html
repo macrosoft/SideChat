@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    :root {
+      --bg-color: #f0f2f5; --text-color: #222; --panel-bg: #ffffff;
+      --border-color: #d1d5db; --btn-bg: #0a7cff; --btn-hover: #0062d6;
+      --btn-text: #ffffff; --secondary-text: #555; --code-bg: #f1f1f1;
+      --user-msg: #0a7cff; --user-text: #fff; --bot-msg: #ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #1a1a1a; --text-color: #e0e0e0; --panel-bg: #2d2d2d;
+        --border-color: #444; --btn-bg: #3a86ff; --btn-hover: #256ce1;
+        --btn-text: #ffffff; --secondary-text: #aaa; --code-bg: #333333;
+        --user-msg: #0a7cff; --user-text: #fff; --bot-msg: #2d2d2d;
+      }
+    }
+
+    body {
+      padding: 0; margin: 0; display: flex; flex-direction: column; height: 100vh;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background-color: var(--bg-color); color: var(--text-color);
+    }
+
+    .top-bar {
+      padding: 10px 15px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color);
+    }
+    details { margin-bottom: 10px; font-size: 13px; color: var(--secondary-text); }
+    summary { cursor: pointer; font-weight: bold; margin-bottom: 5px; outline: none; }
+
+    .control-group { margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
+    label { font-size: 12px; font-weight: bold; color: var(--secondary-text); }
+    input, select, button {
+      padding: 7px; border-radius: 5px; border: 1px solid var(--border-color);
+      background-color: var(--bg-color); color: var(--text-color); font-size: 13px;
+    }
+    .flex-row { display: flex; gap: 5px; width: 100%; }
+    .flex-row > * { flex-grow: 1; }
+
+    button {
+      background-color: var(--btn-bg); color: var(--btn-text); border: none;
+      cursor: pointer; font-weight: bold; transition: 0.2s;
+    }
+    button:hover { background-color: var(--btn-hover); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    #refreshModelsBtn { flex-grow: 0; width: 36px; padding: 7px 0; text-align: center; background: transparent; border: 1px solid var(--border-color);}
+    #refreshModelsBtn:hover { background-color: var(--border-color); }
+
+    .action-buttons { display: flex; gap: 5px; margin-top: 5px; }
+    .btn-secondary { background-color: #6c757d; }
+    .btn-secondary:hover { background-color: #5a6268; }
+
+    #chatBox {
+      flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px;
+    }
+
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; word-wrap: break-word; }
+    .msg-user { align-self: flex-end; background-color: var(--user-msg); color: var(--user-text); border-bottom-right-radius: 2px; }
+    .msg-bot { align-self: flex-start; background-color: var(--bot-msg); border: 1px solid var(--border-color); border-bottom-left-radius: 2px; }
+
+    .msg-bot h1, .msg-bot h2, .msg-bot h3 { margin-top: 0; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; }
+    .msg-bot p { margin-top: 0; margin-bottom: 8px; }
+    .msg-bot p:last-child { margin-bottom: 0; }
+    .msg-bot ul, .msg-bot ol { margin-top: 0; margin-bottom: 8px; padding-left: 20px; }
+    .msg-bot code { background-color: var(--code-bg); padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+
+    .msg-system { align-self: center; background: transparent; color: var(--secondary-text); font-size: 12px; font-style: italic; border: none; padding: 5px; max-width: 100%; text-align: center; }
+
+    .input-area {
+      padding: 10px 15px; background: var(--panel-bg); border-top: 1px solid var(--border-color);
+      display: flex; gap: 10px; align-items: flex-end;
+    }
+    #chatInput {
+      flex: 1; resize: none; height: 40px; max-height: 120px; overflow-y: auto;
+      padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);
+      background: var(--bg-color); color: var(--text-color); font-family: inherit; font-size: 13.5px;
+    }
+    #sendBtn {
+      height: 40px; width: 45px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 18px;
+    }
+
+    #debugModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; padding: 20px; box-sizing: border-box; }
+    #debugTextarea { width: 100%; height: calc(100% - 40px); background: #1e1e1e; color: #00ff00; font-family: monospace; padding: 10px; box-sizing: border-box; resize: none; border: none; }
+    #closeDebugBtn { display: block; margin-top: 10px; background: #dc3545; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <details>
+      <summary>⚙️ llama.cpp Settings</summary>
+      <div class="control-group">
+        <label>Server URL:</label>
+        <input type="text" id="serverUrl" placeholder="http://127.0.0.1:8080">
+      </div>
+      <div class="control-group">
+        <label>Model:</label>
+        <div class="flex-row">
+          <select id="modelSelect"><option value="">Loading...</option></select>
+          <button id="refreshModelsBtn" title="Refresh">🔄</button>
+        </div>
+      </div>
+    </details>
+
+    <div class="action-buttons">
+      <button id="summaryBtn" title="Summarize entire page">📄 Summary</button>
+      <button id="newChatBtn" class="btn-secondary" title="Clear history and start over">🗑️ New Chat</button>
+      <button id="debugBtn" class="btn-secondary" title="View context">🐛</button>
+    </div>
+  </div>
+
+  <div id="chatBox">
+    <div class="msg msg-system">Open an article and click "Summary" or ask a question about its content.</div>
+  </div>
+
+  <div class="input-area">
+    <textarea id="chatInput" placeholder="Ask something about the page..."></textarea>
+    <button id="sendBtn">➤</button>
+  </div>
+
+  <div id="debugModal">
+    <textarea id="debugTextarea" readonly></textarea>
+    <button id="closeDebugBtn">Close</button>
+  </div>
+
+  <script src="marked.min.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
