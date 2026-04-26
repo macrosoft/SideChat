@@ -151,6 +151,7 @@ async function handleChat(userText, isSummaryRequest = false) {
     sendBtn.disabled = true;
     summaryBtn.disabled = true;
     chatInput.value = '';
+    chatInput.style.height = 'auto';
 
     try {
         if (!isSummaryRequest) addMessageToUI('user', userText);
@@ -218,6 +219,11 @@ async function handleChat(userText, isSummaryRequest = false) {
 }
 
 sendBtn.addEventListener('click', () => handleChat(chatInput.value));
+
+chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
+});
 
 chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
