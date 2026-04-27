@@ -177,6 +177,7 @@ async function handleChat(userText, isSummaryRequest = false) {
     summaryBtn.disabled = true;
     chatInput.value = '';
     chatInput.style.height = 'auto';
+    chatInput.style.overflowY = 'hidden';
 
     try {
         if (!isSummaryRequest) addMessageToUI('user', userText);
@@ -248,6 +249,11 @@ sendBtn.addEventListener('click', () => handleChat(chatInput.value));
 chatInput.addEventListener('input', () => {
     chatInput.style.height = 'auto';
     chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
+    if (chatInput.scrollHeight > 150) {
+        chatInput.style.overflowY = 'auto';
+    } else {
+        chatInput.style.overflowY = 'hidden';
+    }
 });
 
 chatInput.addEventListener('keydown', (e) => {
